@@ -13,6 +13,8 @@ interface Experience {
   name: string;
   description: string;
   image: string;
+  location?: string;
+  city?: string;
 }
 
 const ExperiencesSection = () => {

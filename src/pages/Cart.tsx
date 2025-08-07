@@ -19,7 +19,7 @@ import { Trash2, Minus, Plus, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCartStore, CartItem } from "@/store/cart-store";
 import { createBookingFromCart } from "@/services/bookingService";
-import BookingTicket from "@/components/BookingTicket";
+import BookingTicket from "@/components/tickets/BookingTicket";
 import MovingPartyBackground from "@/components/ui/MovingPartyBackground";
 
 const Cart = () => {

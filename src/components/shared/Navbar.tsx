@@ -15,8 +15,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCartStore } from "@/store/cart-store";
 
 type NavbarProps = {
-  selectedCity: string;
-  setSelectedCity: (city: string) => void;
+  selectedCity?: string;
+  setSelectedCity?: (city: string) => void;
   bgColor?: string; // Optional background color override
   logoSrc?: string; // Optional logo override
 };
@@ -29,6 +29,7 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
   const location = useLocation();
   const totalItems = useCartStore(state => state.getTotalItems());
   const [searchValue, setSearchValue] = useState("");
+  const [internalCity, setInternalCity] = useState<string>(() => localStorage.getItem("selectedCity") || "Mumbai");
 
   // Handle scroll effect
   useEffect(() => {
@@ -43,6 +44,13 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Persist internal city if using internal state
+  useEffect(() => {
+    if (!selectedCity) {
+      localStorage.setItem("selectedCity", internalCity);
+    }
+  }, [internalCity, selectedCity]);
 
   const handleSignOut = async () => {
     try {
@@ -110,14 +118,14 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
               <DropdownMenuTrigger asChild>
                 <Button className="flex items-center gap-1 min-w-0 truncate" style={{ backgroundColor: '#F7E1B5', color: 'black' }}>
                   <MapPin className="h-4 w-4 text-black" />
-                  <span className="truncate max-w-[7rem] text-black">{selectedCity}</span>
+                  <span className="truncate max-w-[7rem] text-black">{selectedCity ?? internalCity}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40 max-w-xs">
                 {cities.map((city) => (
                   <DropdownMenuItem 
                     key={city.id}
-                    onClick={() => setSelectedCity(city.name)}
+                    onClick={() => (setSelectedCity ? setSelectedCity(city.name) : setInternalCity(city.name))}
                   >
                     <span className="truncate max-w-[8rem]">{city.name}</span>
                   </DropdownMenuItem>
@@ -219,7 +227,7 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
                   <Button variant="outline" className="flex items-center justify-between w-full" style={{ backgroundColor: '#F7E1B5', color: 'black' }}>
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4 text-black" />
-                      {selectedCity}
+                      {selectedCity ?? internalCity}
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
@@ -227,7 +235,7 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
                   {cities.map((city) => (
                     <DropdownMenuItem 
                       key={city.id}
-                      onClick={() => setSelectedCity(city.name)}
+                      onClick={() => (setSelectedCity ? setSelectedCity(city.name) : setInternalCity(city.name))}
                     >
                       {city.name}
                     </DropdownMenuItem>

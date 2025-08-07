@@ -108,9 +108,13 @@ export default function PricingPage() {
       navigate("/auth");
       return;
     }
+    const now = new Date();
+    const end = myMembership?.end_date ? new Date(myMembership.end_date) : null;
+    const start_date = end && end > now ? end.toISOString() : now.toISOString();
+
     const { data, error } = await supabase
       .from("user_memberships")
-      .insert({ user_id: user.id, plan_id: plan.id, status: "active" })
+      .insert({ user_id: user.id, plan_id: plan.id, status: "active", start_date })
       .select("*, plan:membership_plans(*)")
       .single();
 
@@ -121,6 +125,8 @@ export default function PricingPage() {
     toast({ title: "Premium activated!", description: `${plan.name} plan is now active.` });
     setMyMembership(data);
   };
+
+  const daysRemaining = myMembership?.end_date ? Math.ceil((new Date(myMembership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-raspberry p-4">
@@ -135,31 +141,35 @@ export default function PricingPage() {
 
       <div className="w-full max-w-2xl mb-12">
         <div className="flex flex-col gap-6">
-          {plans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`transition-all duration-200 ${selected?.id === plan.id ? "border-sandstorm ring-4 ring-sandstorm/60" : "border-gray-200 hover:scale-105"} bg-sandstorm/90`}
-              onClick={() => setSelected(plan)}
-              tabIndex={0}
-              role="button"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  <CardTitle className="text-2xl text-violet font-extrabold">{plan.name}</CardTitle>
-                  <Badge className="bg-yellow text-black text-xs px-2 py-1 rounded-full">{plan.duration_days} days</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-semibold text-black">₹{plan.price_inr}</div>
-                <div className="text-base text-violet mt-2">{plan.description || "All-access to premium features and experiences."}</div>
-                <Button className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
-                  onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
-                >
-                  Subscribe
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {plans.map((plan) => {
+            const isCurrentPlan = myMembership?.plan?.id === plan.id && daysRemaining !== null && daysRemaining > 0;
+            const ctaLabel = isCurrentPlan ? (daysRemaining && daysRemaining > 0 ? `Renew (starts after ${daysRemaining} day${daysRemaining === 1 ? '' : 's'})` : 'Renew') : 'Subscribe';
+            return (
+              <Card
+                key={plan.id}
+                className={`transition-all duration-200 ${selected?.id === plan.id ? "border-sandstorm ring-4 ring-sandstorm/60" : "border-gray-200 hover:scale-105"} bg-sandstorm/90`}
+                onClick={() => setSelected(plan)}
+                tabIndex={0}
+                role="button"
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle className="text-2xl text-violet font-extrabold">{plan.name}</CardTitle>
+                    <Badge className="bg-yellow text-black text-xs px-2 py-1 rounded-full">{plan.duration_days} days</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-semibold text-black">₹{plan.price_inr}</div>
+                  <div className="text-base text-violet mt-2">{plan.description || "All-access to premium features and experiences."}</div>
+                  <Button className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
+                    onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
+                  >
+                    {ctaLabel}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -186,6 +196,9 @@ export default function PricingPage() {
             <div className="text-black text-sm mt-1">
               Valid {new Date(myMembership.start_date).toLocaleDateString()} — {new Date(myMembership.end_date).toLocaleDateString()}
             </div>
+            {daysRemaining !== null && (
+              <div className="text-sm text-black mt-1">{daysRemaining > 0 ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining` : 'Expired'}</div>
+            )}
           </Card>
         ) : (
           <div className="text-center text-white/90">No membership yet. Pick a plan above.</div>
