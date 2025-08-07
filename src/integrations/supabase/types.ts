@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       artists: {
@@ -41,39 +46,39 @@ export type Database = {
       }
       attendance_records: {
         Row: {
-          created_at: string
+          created_at: string | null
           event_id: string
           host_id: string
           id: string
-          marked_at: string
+          marked_at: string | null
           notes: string | null
           status: string
           ticket_id: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           event_id: string
           host_id: string
           id?: string
-          marked_at?: string
+          marked_at?: string | null
           notes?: string | null
           status?: string
           ticket_id: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           event_id?: string
           host_id?: string
           id?: string
-          marked_at?: string
+          marked_at?: string | null
           notes?: string | null
           status?: string
           ticket_id?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -104,45 +109,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       banners: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           image_url: string
-          is_active: boolean
+          is_active: boolean | null
           link_text: string | null
           link_url: string | null
-          sort_order: number
+          sort_order: number | null
           subtitle: string | null
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           image_url: string
-          is_active?: boolean
+          is_active?: boolean | null
           link_text?: string | null
           link_url?: string | null
-          sort_order?: number
+          sort_order?: number | null
           subtitle?: string | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           image_url?: string
-          is_active?: boolean
+          is_active?: boolean | null
           link_text?: string | null
           link_url?: string | null
-          sort_order?: number
+          sort_order?: number | null
           subtitle?: string | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -150,6 +155,8 @@ export type Database = {
         Row: {
           amount: number
           booking_date: string
+          coupon_applied: string | null
+          discount_amount: number | null
           email: string
           event_id: string | null
           id: string
@@ -158,12 +165,15 @@ export type Database = {
           payment_id: string | null
           phone: string
           status: string
+          ticket_names: string[] | null
           tickets: number
           user_id: string
         }
         Insert: {
           amount: number
           booking_date?: string
+          coupon_applied?: string | null
+          discount_amount?: number | null
           email: string
           event_id?: string | null
           id?: string
@@ -172,12 +182,15 @@ export type Database = {
           payment_id?: string | null
           phone: string
           status?: string
+          ticket_names?: string[] | null
           tickets?: number
           user_id: string
         }
         Update: {
           amount?: number
           booking_date?: string
+          coupon_applied?: string | null
+          discount_amount?: number | null
           email?: string
           event_id?: string | null
           id?: string
@@ -186,6 +199,7 @@ export type Database = {
           payment_id?: string | null
           phone?: string
           status?: string
+          ticket_names?: string[] | null
           tickets?: number
           user_id?: string
         }
@@ -196,42 +210,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       categories: {
         Row: {
           color: string
-          created_at: string
+          created_at: string | null
           description: string | null
           icon: string
           id: string
-          is_active: boolean
+          is_active: boolean | null
           name: string
-          sort_order: number
-          updated_at: string
+          sort_order: number | null
+          updated_at: string | null
         }
         Insert: {
           color: string
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           icon: string
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name: string
-          sort_order?: number
-          updated_at?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Update: {
           color?: string
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           icon?: string
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name?: string
-          sort_order?: number
-          updated_at?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -262,6 +276,13 @@ export type Database = {
             foreignKeyName: "event_seats_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "booking_with_attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_seats_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -271,153 +292,192 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       event_types: {
         Row: {
-          created_at: string
-          deletable: boolean
+          created_at: string | null
+          deletable: boolean | null
           description: string | null
           icon: string | null
           id: string
           image_url: string | null
-          is_active: boolean
+          is_active: boolean | null
           name: string
-          sort_order: number
-          updated_at: string
+          sort_order: number | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          deletable?: boolean
+          created_at?: string | null
+          deletable?: boolean | null
           description?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
-          is_active?: boolean
+          is_active?: boolean | null
           name: string
-          sort_order?: number
-          updated_at?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
-          deletable?: boolean
+          created_at?: string | null
+          deletable?: boolean | null
           description?: string | null
           icon?: string | null
           id?: string
           image_url?: string | null
-          is_active?: boolean
+          is_active?: boolean | null
           name?: string
-          sort_order?: number
-          updated_at?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       events: {
         Row: {
           address: string | null
+          base_price: number
           category: string
           city: string
+          convenience_fee: number
           created_at: string
-          created_by: string | null
           date: string
-          description: string
+          description: string | null
           discounted_price: number | null
           duration: string | null
-          event_type: string | null
-          featured: boolean
-          gallery: string[] | null
-          has_discount: boolean
+          event_type: string
+          gst: number
+          has_discount: boolean | null
           host: string | null
           id: string
           image: string
-          is_published: boolean
+          images: string[] | null
+          is_published: boolean | null
           long_description: string | null
           price: number
           real_price: number | null
+          seats_available: number
           subtitle: string | null
+          subtotal: number
+          ticket_price: number
           time: string
           title: string
-          updated_at: string | null
+          updated_at: string
           venue: string
         }
         Insert: {
           address?: string | null
+          base_price?: number
           category: string
           city: string
+          convenience_fee?: number
           created_at?: string
-          created_by?: string | null
           date: string
-          description: string
+          description?: string | null
           discounted_price?: number | null
           duration?: string | null
-          event_type?: string | null
-          featured?: boolean
-          gallery?: string[] | null
-          has_discount?: boolean
+          event_type: string
+          gst?: number
+          has_discount?: boolean | null
           host?: string | null
           id?: string
           image: string
-          is_published?: boolean
+          images?: string[] | null
+          is_published?: boolean | null
           long_description?: string | null
           price: number
           real_price?: number | null
+          seats_available?: number
           subtitle?: string | null
+          subtotal?: number
+          ticket_price?: number
           time: string
           title: string
-          updated_at?: string | null
+          updated_at?: string
           venue: string
         }
         Update: {
           address?: string | null
+          base_price?: number
           category?: string
           city?: string
+          convenience_fee?: number
           created_at?: string
-          created_by?: string | null
           date?: string
-          description?: string
+          description?: string | null
           discounted_price?: number | null
           duration?: string | null
-          event_type?: string | null
-          featured?: boolean
-          gallery?: string[] | null
-          has_discount?: boolean
+          event_type?: string
+          gst?: number
+          has_discount?: boolean | null
           host?: string | null
           id?: string
           image?: string
-          is_published?: boolean
+          images?: string[] | null
+          is_published?: boolean | null
           long_description?: string | null
           price?: number
           real_price?: number | null
+          seats_available?: number
           subtitle?: string | null
+          subtotal?: number
+          ticket_price?: number
           time?: string
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           venue?: string
+        }
+        Relationships: []
+      }
+      experiences: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          image: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          image: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          image?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       host_events: {
         Row: {
-          created_at: string
+          created_at: string | null
           event_id: string
           host_id: string
           id: string
-          permissions: Json
+          permissions: Json | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           event_id: string
           host_id: string
           id?: string
-          permissions?: Json
+          permissions?: Json | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           event_id?: string
           host_id?: string
           id?: string
-          permissions?: Json
+          permissions?: Json | null
         }
         Relationships: [
           {
@@ -433,39 +493,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "hosts"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       host_invitations: {
         Row: {
           accepted_at: string | null
-          created_at: string
+          created_at: string | null
           email: string
           expires_at: string
           id: string
-          invited_by: string
           invitation_token: string
-          status: string
+          invited_by: string
+          status: string | null
         }
         Insert: {
           accepted_at?: string | null
-          created_at?: string
+          created_at?: string | null
           email: string
           expires_at: string
           id?: string
-          invited_by: string
           invitation_token: string
-          status?: string
+          invited_by: string
+          status?: string | null
         }
         Update: {
           accepted_at?: string | null
-          created_at?: string
+          created_at?: string | null
           email?: string
           expires_at?: string
           id?: string
-          invited_by?: string
           invitation_token?: string
-          status?: string
+          invited_by?: string
+          status?: string | null
         }
         Relationships: [
           {
@@ -474,85 +534,291 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       hosts: {
         Row: {
           bio: string | null
           city: string | null
-          created_at: string
+          created_at: string | null
           host_name: string
           id: string
-          is_active: boolean
-          is_verified: boolean
+          is_active: boolean | null
+          is_verified: boolean | null
           phone: string | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           bio?: string | null
           city?: string | null
-          created_at?: string
+          created_at?: string | null
           host_name: string
           id?: string
-          is_active?: boolean
-          is_verified?: boolean
+          is_active?: boolean | null
+          is_verified?: boolean | null
           phone?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           bio?: string | null
           city?: string | null
-          created_at?: string
+          created_at?: string | null
           host_name?: string
           id?: string
-          is_active?: boolean
-          is_verified?: boolean
+          is_active?: boolean | null
+          is_verified?: boolean | null
           phone?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "hosts_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      jojo_gang_members: {
+        Row: {
+          additional_info: string | null
+          age: number
+          area_pincode: string
+          attended_gathering: string
+          city: string
+          created_at: string | null
+          email: string
+          id: string
+          instagram_link: string
+          name: string
+          phone_number: string
+          position: string
+          updated_at: string | null
+        }
+        Insert: {
+          additional_info?: string | null
+          age: number
+          area_pincode: string
+          attended_gathering: string
+          city: string
+          created_at?: string | null
+          email: string
+          id?: string
+          instagram_link: string
+          name: string
+          phone_number: string
+          position: string
+          updated_at?: string | null
+        }
+        Update: {
+          additional_info?: string | null
+          age?: number
+          area_pincode?: string
+          attended_gathering?: string
+          city?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          instagram_link?: string
+          name?: string
+          phone_number?: string
+          position?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      membership_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean
+          name: string
+          price_inr: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_inr: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_inr?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      motojojo_members: {
+        Row: {
+          area_and_pincode: string
+          art_inspiration: string | null
+          been_to_gathering: string
+          birthday: string
+          city: string
+          created_at: string | null
+          group_role: string | null
+          group_role_other: string | null
+          how_found_us: string
+          how_found_us_other: string | null
+          id: string
+          identify_as: string | null
+          identify_as_other: string | null
+          interests: string
+          mood: string | null
+          mood_other: string | null
+          name: string
+          phone_number: string
+          social_handles: string
+          updated_at: string | null
+          why_join_community: string
+        }
+        Insert: {
+          area_and_pincode: string
+          art_inspiration?: string | null
+          been_to_gathering: string
+          birthday: string
+          city: string
+          created_at?: string | null
+          group_role?: string | null
+          group_role_other?: string | null
+          how_found_us: string
+          how_found_us_other?: string | null
+          id?: string
+          identify_as?: string | null
+          identify_as_other?: string | null
+          interests: string
+          mood?: string | null
+          mood_other?: string | null
+          name: string
+          phone_number: string
+          social_handles: string
+          updated_at?: string | null
+          why_join_community: string
+        }
+        Update: {
+          area_and_pincode?: string
+          art_inspiration?: string | null
+          been_to_gathering?: string
+          birthday?: string
+          city?: string
+          created_at?: string | null
+          group_role?: string | null
+          group_role_other?: string | null
+          how_found_us?: string
+          how_found_us_other?: string | null
+          id?: string
+          identify_as?: string | null
+          identify_as_other?: string | null
+          interests?: string
+          mood?: string | null
+          mood_other?: string | null
+          name?: string
+          phone_number?: string
+          social_handles?: string
+          updated_at?: string | null
+          why_join_community?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          avatar_url: string | null
+          content: string
+          created_at: string | null
+          email: string | null
+          event_id: string | null
+          id: string
+          is_approved: boolean | null
+          is_featured: boolean | null
+          name: string
+          rating: number | null
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          content: string
+          created_at?: string | null
+          email?: string | null
+          event_id?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          rating?: number | null
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          content?: string
+          created_at?: string | null
+          email?: string | null
+          event_id?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          rating?: number | null
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tickets: {
         Row: {
-          attended: boolean | null
-          attended_at: string | null
           booking_id: string | null
-          created_at: string
+          created_at: string | null
+          event_id: string | null
           id: string
-          qr_code: string | null
-          ticket_number: string
+          seat_number: string | null
+          ticket_number: string | null
+          user_id: string | null
           username: string | null
         }
         Insert: {
-          attended?: boolean | null
-          attended_at?: string | null
           booking_id?: string | null
-          created_at?: string
+          created_at?: string | null
+          event_id?: string | null
           id?: string
-          qr_code?: string | null
-          ticket_number: string
+          seat_number?: string | null
+          ticket_number?: string | null
+          user_id?: string | null
           username?: string | null
         }
         Update: {
-          attended?: boolean | null
-          attended_at?: string | null
           booking_id?: string | null
-          created_at?: string
+          created_at?: string | null
+          event_id?: string | null
           id?: string
-          qr_code?: string | null
-          ticket_number?: string
+          seat_number?: string | null
+          ticket_number?: string | null
+          user_id?: string | null
           username?: string | null
         }
         Relationships: [
@@ -560,106 +826,159 @@ export type Database = {
             foreignKeyName: "tickets_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "booking_with_attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      testimonials: {
+      user_memberships: {
         Row: {
-          author_name: string
-          content: string
+          amount_inr: number | null
           created_at: string
+          end_date: string | null
           id: string
-          is_approved: boolean
-          rating: number
+          payment_id: string | null
+          plan_id: string
+          start_date: string
+          status: string
           updated_at: string
+          user_id: string
         }
         Insert: {
-          author_name: string
-          content: string
+          amount_inr?: number | null
           created_at?: string
+          end_date?: string | null
           id?: string
-          is_approved?: boolean
-          rating: number
+          payment_id?: string | null
+          plan_id: string
+          start_date?: string
+          status?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          author_name?: string
-          content?: string
+          amount_inr?: number | null
           created_at?: string
+          end_date?: string | null
           id?: string
-          is_approved?: boolean
-          rating?: number
+          payment_id?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
           updated_at?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "membership_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
           avatar_url: string | null
           city: string | null
-          created_at: string
+          created_at: string | null
           email: string
           full_name: string | null
           id: string
           phone: string | null
-          preferences: Json
           role: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           city?: string | null
-          created_at?: string
+          created_at?: string | null
           email: string
           full_name?: string | null
           id: string
           phone?: string | null
-          preferences?: Json
           role?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           city?: string | null
-          created_at?: string
+          created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
           phone?: string | null
-          preferences?: Json
           role?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
     }
     Views: {
-      attendance_summary_view: {
+      attendance_city_stats: {
         Row: {
           absent_count: number | null
-          attendance_rate: number | null
-          event_city: string | null
-          event_date: string | null
-          event_id: string | null
-          event_title: string | null
-          host_name: string | null
+          attendance_percentage: number | null
+          city: string | null
           present_count: number | null
-          total_tickets: number | null
+          total_attendance: number | null
         }
         Relationships: []
       }
-      host_dashboard_view: {
+      booking_with_attendees: {
         Row: {
-          absent_tickets: number | null
-          city: string | null
+          amount: number | null
+          attendee_names: string | null
+          booking_date: string | null
           email: string | null
-          host_id: string | null
-          host_name: string | null
-          present_tickets: number | null
-          total_events: number | null
-          total_tickets: number | null
+          event_id: string | null
+          id: string | null
+          name: string | null
+          order_id: string | null
+          payment_id: string | null
+          phone: string | null
+          status: string | null
+          tickets: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jojo_gang_city_stats: {
+        Row: {
+          city: string | null
+          count: number | null
+          percentage: number | null
+        }
+        Relationships: []
+      }
+      jojo_gang_position_stats: {
+        Row: {
+          count: number | null
+          percentage: number | null
+          position: string | null
         }
         Relationships: []
       }
@@ -667,37 +986,30 @@ export type Database = {
     Functions: {
       accept_host_invitation: {
         Args: {
-          invitation_token: string
-          user_id: string
-          host_name: string
-          phone?: string
-          city?: string
-          bio?: string
+          p_token: string
+          p_user_id: string
+          p_host_name: string
+          p_phone?: string
+          p_city?: string
+          p_bio?: string
         }
-        Returns: Json
+        Returns: boolean
       }
       create_host_invitation: {
         Args: {
-          invite_email: string
-          invited_by_user_id: string
+          p_email: string
+          p_invited_by: string
+          p_expires_in_hours?: number
         }
-        Returns: Json
+        Returns: string
       }
-      get_attendance_stats: {
-        Args: {
-          event_id?: string
-          city?: string
-        }
-        Returns: Json
+      generate_event_seats: {
+        Args: { event_id: string; total_seats: number }
+        Returns: undefined
       }
-      mark_attendance: {
-        Args: {
-          ticket_id: string
-          event_id: string
-          status: string
-          notes?: string
-        }
-        Returns: Json
+      generate_invitation_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
     }
     Enums: {
@@ -709,21 +1021,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -741,14 +1057,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -764,14 +1082,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -787,14 +1107,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -802,14 +1124,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

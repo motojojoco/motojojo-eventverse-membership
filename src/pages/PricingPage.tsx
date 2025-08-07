@@ -1,5 +1,8 @@
-import { useState } from "react";
-import RazorpayButton from "@/components/ui/RazorpayButton";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Star, Gift, Users, Calendar, Lock, Clock, TrendingUp } from "lucide-react";
@@ -43,33 +46,89 @@ const premiumFeatures = [
   },
 ];
 
+type Plan = {
+  id: string;
+  name: string;
+  duration_days: number;
+  price_inr: number;
+  description?: string | null;
+};
+
 export default function PricingPage() {
-  // Demo data: could be refactored to fetch in real app
-  const plans = [
-    {
-      name: "Premium Pass",
-      amount: 499,
-      description: "Full access to all premium events, VIP support, and more.",
-      perks: ["All-access Events", "VIP Customer Support", "Early-bird Offers"],
-    },
-    {
-      name: "Elite Pass",
-      amount: 999,
-      description: "Everything in Premium plus backstage and artist meet-ups!",
-      perks: ["+ Backstage Entry", "+ Meet & Greet artists"],
+  const { isSignedIn, user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selected, setSelected] = useState<Plan | null>(null);
+  const [myMembership, setMyMembership] = useState<any>(null);
+
+  useEffect(() => {
+    document.title = "Motojojo Premium | Pricing Plans";
+    const fetchPlans = async () => {
+      const { data, error } = await supabase
+        .from("membership_plans")
+        .select("*")
+        .eq("is_active", true)
+        .order("duration_days", { ascending: true });
+      if (error) {
+        console.error("Error fetching plans:", error);
+        const fallback: Plan[] = [
+          { id: "fallback-30", name: "Monthly", duration_days: 30, price_inr: 500, description: null },
+          { id: "fallback-90", name: "Quarterly", duration_days: 90, price_inr: 899, description: null },
+          { id: "fallback-365", name: "Annual", duration_days: 365, price_inr: 1899, description: null },
+        ];
+        setPlans(fallback);
+        setSelected(fallback[0]);
+      } else {
+        const list = data || [];
+        setPlans(list);
+        setSelected(list[0] || null);
+      }
+    };
+
+    const fetchMembership = async () => {
+      if (!user?.id) { setMyMembership(null); return; }
+      const { data, error } = await supabase
+        .from("user_memberships")
+        .select("*, plan:membership_plans(*)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!error) setMyMembership(data);
+    };
+
+    fetchPlans();
+    fetchMembership();
+  }, [user?.id]);
+
+  const handleSubscribe = async (plan: Plan) => {
+    if (!isSignedIn || !user?.id) {
+      navigate("/auth");
+      return;
     }
-  ];
-  const [selected, setSelected] = useState(plans[0]);
+    const { data, error } = await supabase
+      .from("user_memberships")
+      .insert({ user_id: user.id, plan_id: plan.id, status: "active" })
+      .select("*, plan:membership_plans(*)")
+      .single();
+
+    if (error) {
+      toast({ title: "Subscription failed", description: error.message });
+      return;
+    }
+    toast({ title: "Premium activated!", description: `${plan.name} plan is now active.` });
+    setMyMembership(data);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-raspberry p-4">
       <div className="w-full max-w-2xl mb-10">
         <h1 className="text-4xl font-bold text-sandstorm text-center mb-2">Motojojo Premium</h1>
         <div className="flex flex-col items-center mb-4">
-          <Badge className="bg-yellow text-black text-base px-4 py-2 rounded-full mb-2">Coming Soon</Badge>
           <p className="text-lg text-white/90 text-center max-w-xl">
-            Unlock the best of Motojojo with exclusive features, early access, and a premium community experience. <br/>
-            <span className="text-sandstorm font-semibold">Premium is launching soon—here's what's coming:</span>
+            Unlock the best of Motojojo with exclusive features, early access, and a premium community experience.
           </p>
         </div>
       </div>
@@ -78,8 +137,8 @@ export default function PricingPage() {
         <div className="flex flex-col gap-6">
           {plans.map((plan) => (
             <Card
-              key={plan.name}
-              className={`transition-all duration-200 ${selected.name === plan.name ? "border-sandstorm ring-4 ring-sandstorm/60" : "border-gray-200 hover:scale-105"} bg-sandstorm/90`}
+              key={plan.id}
+              className={`transition-all duration-200 ${selected?.id === plan.id ? "border-sandstorm ring-4 ring-sandstorm/60" : "border-gray-200 hover:scale-105"} bg-sandstorm/90`}
               onClick={() => setSelected(plan)}
               tabIndex={0}
               role="button"
@@ -87,17 +146,16 @@ export default function PricingPage() {
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <CardTitle className="text-2xl text-violet font-extrabold">{plan.name}</CardTitle>
-                  <Badge className="bg-yellow text-black text-xs px-2 py-1 rounded-full">Coming Soon</Badge>
+                  <Badge className="bg-yellow text-black text-xs px-2 py-1 rounded-full">{plan.duration_days} days</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold text-black">₹{plan.amount}</div>
-                <div className="text-base text-violet mt-2">{plan.description}</div>
-                <ul className="list-disc text-sm mt-2 ml-5 text-black">
-                  {plan.perks.map((perk) => <li key={perk}>{perk}</li>)}
-                </ul>
-                <Button disabled className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2 opacity-80 cursor-not-allowed">
-                  Subscribe (Coming Soon)
+                <div className="text-lg font-semibold text-black">₹{plan.price_inr}</div>
+                <div className="text-base text-violet mt-2">{plan.description || "All-access to premium features and experiences."}</div>
+                <Button className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
+                  onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
+                >
+                  Subscribe
                 </Button>
               </CardContent>
             </Card>
@@ -120,16 +178,18 @@ export default function PricingPage() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center mt-8 mb-8">
-        <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
-        <h3 className="text-xl font-bold text-sandstorm mb-2">Motojojo Premium is launching soon!</h3>
-        <p className="text-base text-white/80 mb-4 text-center max-w-lg">
-          Stay tuned for updates and be the first to experience the next level of events and entertainment. <br/>
-          <span className="text-yellow font-semibold">Coming Soon</span>
-        </p>
-        <Button disabled className="bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg px-8 py-3 opacity-80 cursor-not-allowed">
-          Coming Soon
-        </Button>
+      <div className="w-full max-w-2xl mb-12">
+        <h3 className="text-xl font-bold text-sandstorm text-center mb-4">My Membership</h3>
+        {myMembership ? (
+          <Card className="bg-white/90 border-0 shadow-md p-4">
+            <div className="text-violet font-semibold">{myMembership.plan?.name} • ₹{myMembership.amount_inr} • {myMembership.status}</div>
+            <div className="text-black text-sm mt-1">
+              Valid {new Date(myMembership.start_date).toLocaleDateString()} — {new Date(myMembership.end_date).toLocaleDateString()}
+            </div>
+          </Card>
+        ) : (
+          <div className="text-center text-white/90">No membership yet. Pick a plan above.</div>
+        )}
       </div>
     </div>
   );

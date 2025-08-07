@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Star, Gift, Users, Calendar, Lock, Clock, TrendingUp } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
-
+import { useNavigate } from "react-router-dom";
 const premiumFeatures = [
   {
     icon: <Star className="h-6 w-6 text-yellow" />, 
@@ -48,8 +48,9 @@ const premiumFeatures = [
 const ExplorePremium = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
+    document.title = "Motojojo Premium | Choose Your Plan";
   }, []);
-
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -80,8 +81,10 @@ const ExplorePremium = () => {
                   <Badge className="bg-yellow text-black text-base px-3 py-1 rounded-full">Coming Soon</Badge>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center">
-                  <Button disabled className="w-full bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-3 mt-4 opacity-80 cursor-not-allowed">
-                    Get Premium (Coming Soon)
+                  <Button className="w-full bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-3 mt-4"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    Choose Plan
                   </Button>
                 </CardContent>
               </Card>
@@ -111,8 +114,10 @@ const ExplorePremium = () => {
               <p className="text-lg text-muted-foreground mb-6">
                 Stay tuned for updates and be the first to experience the next level of events and entertainment.
               </p>
-              <Button disabled className="bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg px-8 py-3 opacity-80 cursor-not-allowed">
-                Coming Soon
+              <Button className="bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg px-8 py-3"
+                onClick={() => navigate('/pricing')}
+              >
+                See Plans
               </Button>
             </div>
           </FadeIn>

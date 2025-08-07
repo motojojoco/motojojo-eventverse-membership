@@ -125,7 +125,8 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Premium Button */}
+            {/* Premium & Membership Buttons */}
+            <Button className="min-w-0 truncate text-mapcream bg-transparent hover:bg-transparent" onClick={() => navigate("/pricing")}>Premium</Button>
             <Button className="min-w-0 truncate text-mapcream bg-transparent hover:bg-transparent" onClick={() => navigate("/membership")}>Membership</Button>
 
             {/* Experiences Navigation */}
@@ -234,7 +235,10 @@ const Navbar = ({ selectedCity, setSelectedCity, bgColor, logoSrc }: NavbarProps
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Premium Button (Mobile) */}
+              {/* Premium & Membership (Mobile) */}
+              <Button className="bg-gradient-to-r from-violet to-red hover:opacity-90 transition-opacity w-full" onClick={() => navigate("/pricing")}>
+                Premium
+              </Button>
               <Button className="bg-gradient-to-r from-violet to-red hover:opacity-90 transition-opacity w-full" onClick={() => navigate("/membership")}>
                 Membership
               </Button>
