@@ -221,13 +221,44 @@ export const markAttendance = async (
   notes?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> => {
   // This should call an RPC or insert into attendance_records as per your backend
+  // Determine host_id and user_id
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+  const { data: hostProfile, error: hostErr } = await supabase
+    .from('hosts')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+  if (hostErr || !hostProfile) {
+    return { success: false, error: 'Host profile not found' };
+  }
+  const { data: ticketRow, error: ticketErr } = await supabase
+    .from('tickets')
+    .select('booking_id')
+    .eq('id', ticketId)
+    .single();
+  if (ticketErr || !ticketRow) {
+    return { success: false, error: 'Ticket not found' };
+  }
+  const { data: bookingRow, error: bookingErr } = await supabase
+    .from('bookings')
+    .select('user_id')
+    .eq('id', ticketRow.booking_id)
+    .single();
+  if (bookingErr || !bookingRow) {
+    return { success: false, error: 'Booking not found' };
+  }
   const { data, error } = await supabase
     .from('attendance_records')
     .insert({
       ticket_id: ticketId,
       event_id: eventId,
       status,
-      notes: notes || null
+      notes: notes || null,
+      host_id: hostProfile.id,
+      user_id: bookingRow.user_id
     })
     .select()
     .single();
@@ -311,29 +342,30 @@ export const getHostDashboardData = async () => {
   const { data: tickets } = await supabase
     .from('tickets')
     .select(`
-      id, 
-      attended,
+      id,
       bookings!inner(event_id)
     `)
     .in('bookings.event_id', eventIds);
 
-  if (!tickets) {
-    return {
-      total_events: events.length,
-      total_tickets: 0,
-      present_tickets: 0,
-      absent_tickets: 0
-    };
-  }
+  const totalTickets = tickets?.length || 0;
 
-  const presentTickets = tickets.filter(t => t.attended === true).length;
-  const absentTickets = tickets.filter(t => t.attended === false).length;
+  const { data: presentRecs } = await supabase
+    .from('attendance_records')
+    .select('id')
+    .in('event_id', eventIds)
+    .eq('status', 'present');
+
+  const { data: absentRecs } = await supabase
+    .from('attendance_records')
+    .select('id')
+    .in('event_id', eventIds)
+    .eq('status', 'absent');
 
   return {
     total_events: events.length,
-    total_tickets: tickets.length,
-    present_tickets: presentTickets,
-    absent_tickets: absentTickets
+    total_tickets: totalTickets,
+    present_tickets: presentRecs?.length || 0,
+    absent_tickets: absentRecs?.length || 0
   };
 };
 
@@ -364,14 +396,7 @@ export const getAttendanceSummary = async () => {
       id,
       title,
       date,
-      city,
-      bookings (
-        id,
-        tickets (
-          id,
-          attended
-        )
-      )
+      city
     `)
     .eq('host', hostProfile.id)
     .order('date', { ascending: false });
@@ -383,25 +408,40 @@ export const getAttendanceSummary = async () => {
 
   if (!data) return [];
 
-  // Calculate attendance statistics for each event
-  return data.map(event => {
-    const allTickets = event.bookings?.flatMap(booking => booking.tickets || []) || [];
-    const totalTickets = allTickets.length;
-    const presentCount = allTickets.filter(ticket => ticket.attended === true).length;
-    const absentCount = allTickets.filter(ticket => ticket.attended === false).length;
-    const attendanceRate = totalTickets > 0 ? Math.round((presentCount / totalTickets) * 100) : 0;
-
-    return {
-      event_id: event.id,
-      event_title: event.title,
-      event_city: event.city,
-      event_date: event.date,
-      total_tickets: totalTickets,
-      present_count: presentCount,
-      absent_count: absentCount,
-      attendance_rate: attendanceRate
-    };
-  });
+  // Calculate attendance statistics for each event using attendance_records
+  const summaries = await Promise.all(
+    data.map(async (event: any) => {
+      const { data: present } = await supabase
+        .from('attendance_records')
+        .select('id')
+        .eq('event_id', event.id)
+        .eq('status', 'present');
+      const { data: absent } = await supabase
+        .from('attendance_records')
+        .select('id')
+        .eq('event_id', event.id)
+        .eq('status', 'absent');
+      const totalTicketsRes = await supabase
+        .from('tickets')
+        .select('id, bookings!inner(event_id)')
+        .eq('bookings.event_id', event.id);
+      const totalTickets = totalTicketsRes.data?.length || 0;
+      const presentCount = present?.length || 0;
+      const absentCount = absent?.length || 0;
+      const attendanceRate = totalTickets > 0 ? Math.round((presentCount / totalTickets) * 100) : 0;
+      return {
+        event_id: event.id,
+        event_title: event.title,
+        event_city: event.city,
+        event_date: event.date,
+        total_tickets: totalTickets,
+        present_count: presentCount,
+        absent_count: absentCount,
+        attendance_rate: attendanceRate
+      };
+    })
+  );
+  return summaries;
 };
 
 // Ticket Management for Hosts

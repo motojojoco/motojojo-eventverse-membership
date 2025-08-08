@@ -49,7 +49,7 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
     return [];
   }
   
-  return data || [];
+  return (data as unknown as Testimonial[]) || [];
 };
 
 export const getAllTestimonials = async (): Promise<Testimonial[]> => {
@@ -63,7 +63,7 @@ export const getAllTestimonials = async (): Promise<Testimonial[]> => {
     return [];
   }
   
-  return data || [];
+  return (data as unknown as Testimonial[]) || [];
 };
 
 export const getPendingTestimonials = async (): Promise<Testimonial[]> => {
@@ -78,7 +78,7 @@ export const getPendingTestimonials = async (): Promise<Testimonial[]> => {
     return [];
   }
   
-  return data || [];
+  return (data as unknown as Testimonial[]) || [];
 };
 
 export const createTestimonial = async (testimonialData: CreateTestimonialInput): Promise<Testimonial> => {
@@ -93,7 +93,7 @@ export const createTestimonial = async (testimonialData: CreateTestimonialInput)
     throw new Error(error.message);
   }
 
-  return data;
+  return data as unknown as Testimonial;
 };
 
 export const updateTestimonial = async (id: string, testimonialData: UpdateTestimonialInput): Promise<Testimonial> => {
@@ -109,7 +109,7 @@ export const updateTestimonial = async (id: string, testimonialData: UpdateTesti
     throw new Error(error.message);
   }
 
-  return data;
+  return data as unknown as Testimonial;
 };
 
 export const deleteTestimonial = async (id: string): Promise<void> => {
@@ -144,7 +144,7 @@ export const getTestimonial = async (id: string): Promise<Testimonial | null> =>
     return null;
   }
 
-  return data;
+  return data as unknown as Testimonial;
 };
 
 export const getTestimonialsByRole = async (role: 'audience' | 'artist' | 'organizer'): Promise<Testimonial[]> => {
@@ -160,5 +160,5 @@ export const getTestimonialsByRole = async (role: 'audience' | 'artist' | 'organ
     return [];
   }
   
-  return data || [];
+  return (data as unknown as Testimonial[]) || [];
 }; 

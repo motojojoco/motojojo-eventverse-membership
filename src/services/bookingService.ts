@@ -154,23 +154,20 @@ export const createBookingFromCart = async (
       const ticketNumber = `MJ-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticketNumber}`;
       try {
-        const { data: ticketData, error: ticketError } = await supabase
+        const { error: ticketError } = await supabase
           .from('tickets')
           .insert({
             booking_id: booking.id,
             ticket_number: ticketNumber,
-            qr_code: qrCode,
             username: ticketHolderName,
-          })
-          .select()
-          .single();
+          });
         if (ticketError) {
           console.error("Error creating ticket:", ticketError);
           continue;
         }
-        if (ticketData) {
-          ticketNumbers.push(ticketData.ticket_number);
-          qrCodes.push(ticketData.qr_code || '');
+        if (!ticketError) {
+          ticketNumbers.push(ticketNumber);
+          qrCodes.push(qrCode);
         }
       } catch (err) {
         console.error('Exception during ticket creation:', err);
@@ -314,7 +311,6 @@ export const generateTicketsForBooking = async (booking: Booking): Promise<boole
         .insert({
           booking_id: booking.id,
           ticket_number: ticketNumber,
-          qr_code: qrCode,
           username: booking.name
         });
 
@@ -355,7 +351,7 @@ export const resendTicketEmail = async (booking: Booking): Promise<boolean> => {
     }
 
     const ticketNumbers = tickets.map(ticket => ticket.ticket_number);
-    const qrCodes = tickets.map(ticket => ticket.qr_code || '');
+    const qrCodes = tickets.map(ticket => `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticket.ticket_number}`);
     const ticketHolderNames = tickets.map(ticket => ticket.username || booking.name);
 
     // Send email with tickets
@@ -403,21 +399,14 @@ export const markTicketsAsAttended = async (eventId: string): Promise<boolean> =
     const bookingIds = bookings.map(booking => booking.id);
     
     // Update all tickets for these bookings to mark as attended
-    const { error: updateError } = await supabase
-      .from('tickets')
-      .update({
-        attended: true,
-        attended_at: new Date().toISOString()
-      })
-      .in('booking_id', bookingIds)
-      .eq('attended', false); // Only update tickets that haven't been marked as attended
-    
-    if (updateError) {
-      console.error("Error marking tickets as attended:", updateError);
+    const { error: fnError } = await supabase.functions.invoke('mark-attended', {
+      body: { eventId }
+    });
+    if (fnError) {
+      console.error('Error calling mark-attended:', fnError);
       return false;
     }
-    
-    console.log(`Marked tickets as attended for event ${eventId}`);
+    console.log(`Marked attendance for event ${eventId} via edge function`);
     return true;
   } catch (err) {
     console.error("Error in markTicketsAsAttended:", err);
@@ -452,7 +441,7 @@ export const getEventAttendanceStats = async (eventId: string): Promise<{
     
     const { data: tickets, error } = await supabase
       .from('tickets')
-      .select('attended')
+      .select('id')
       .in('booking_id', bookingIds);
     
     if (error) {
@@ -461,7 +450,12 @@ export const getEventAttendanceStats = async (eventId: string): Promise<{
     }
     
     const totalTickets = tickets?.length || 0;
-    const attendedTickets = tickets?.filter(ticket => ticket.attended).length || 0;
+    const { data: presentRecs } = await supabase
+      .from('attendance_records')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('status', 'present');
+    const attendedTickets = presentRecs?.length || 0;
     const attendanceRate = totalTickets > 0 ? (attendedTickets / totalTickets) * 100 : 0;
     
     return {
@@ -651,7 +645,7 @@ export const checkAttendanceFields = async (): Promise<boolean> => {
     // Try to select the attended field from tickets table
     const { data, error } = await supabase
       .from('tickets')
-      .select('attended')
+      .select('id')
       .limit(1);
     
     if (error) {

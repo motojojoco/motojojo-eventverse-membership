@@ -315,9 +315,7 @@ const RazorpayButton = ({ eventId, eventName, amount, onSuccess, className }: Ra
                 .insert({
                   booking_id: booking.id,
                   ticket_number: ticketNumber,
-                  qr_code: qrCode,
                   username: ticketHolderName,
-                  attended: false,
                 });
 
               if (ticketError) {

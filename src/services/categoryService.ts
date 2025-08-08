@@ -172,7 +172,7 @@ export const getCategoriesWithEventCounts = async (): Promise<(Category & { even
     throw error;
   }
 
-  return (data || []).map(category => ({
+  return (data || []).map((category: any) => ({
     ...category,
     event_count: category.events?.[0]?.count || 0
   }));

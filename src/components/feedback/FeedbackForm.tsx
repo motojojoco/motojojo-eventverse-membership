@@ -61,7 +61,14 @@ export default function FeedbackForm({ onSuccess, className }: FeedbackFormProps
   const handleSubmit = async (data: FeedbackFormData) => {
     try {
       setIsSubmitting(true);
-      await createTestimonial(data);
+      const payload = {
+        name: data.name,
+        email: data.email || undefined,
+        role: data.role,
+        content: data.content,
+        rating: data.rating,
+      };
+      await createTestimonial(payload as any);
       toast({
         title: "Thank you for your feedback!",
         description: "Your testimonial has been submitted and will be reviewed shortly.",

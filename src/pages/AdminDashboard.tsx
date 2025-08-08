@@ -858,7 +858,7 @@ const AdminDashboard = () => {
         const eventBookings = bookings?.filter(b => b.event_id === event.id) || [];
         const eventTickets = tickets?.filter(t => eventBookings.map(b => b.id).includes(t.booking_id)) || [];
         const ticketsSold = eventTickets.length;
-        const attendees = eventTickets.filter(t => t.attended).length;
+        const attendees = 0;
         const revenue = eventBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
         return {
           hostName: host?.host_name || 'Unknown',

@@ -62,7 +62,6 @@ import {
   getEventTickets,
   searchTicketByNumber,
   markAttendance,
-  getAttendanceStats,
   getAttendanceSummary,
   getHostDashboardData,
   subscribeToAttendanceRecords
@@ -678,7 +677,7 @@ const HostDashboard = () => {
                   <EventForm
                     onSubmit={async (data) => {
                       if (!hostProfile) return;
-                      await createEvent({ ...data, host: hostProfile.id });
+                      await createEvent({ ...data, host: hostProfile.id, image: (data as any).image || (data as any).images?.[0] || 'https://via.placeholder.com/800x600' });
                       setIsCreateEventOpen(false);
                       queryClient.invalidateQueries({ queryKey: ['host-events'] });
                     }}
