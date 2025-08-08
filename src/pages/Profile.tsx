@@ -1,21 +1,19 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import Navbar from "@/components/shared/Navbar";
-import Footer from "@/components/shared/Footer";
-import { FadeIn } from "@/components/ui/motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import EventTicket from "@/components/tickets/EventTicket";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { FadeIn } from "@/components/ui/motion";
+import { Star, User, Calendar, MapPin, Phone, Mail, Edit2, Check, UserRound, Ticket, Clock, CheckCircle, MessageSquare } from "lucide-react";
+import RazorpayMembershipButton from "@/components/ui/RazorpayMembershipButton";
+import { getUserMembership, getMembershipPlans } from "@/services/membershipService";
 import {
   Tabs,
   TabsContent,
@@ -30,15 +28,13 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
-import { useToast } from "@/hooks/use-toast";
-import { Check, UserRound, MapPin, Phone, Mail, Ticket, Clock, CheckCircle, MessageSquare, Star } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import { getUserBookings, getBookingTickets, Booking, Ticket as TicketType, subscribeToBookingUpdates, generateTicketsForBooking, resendTicketEmail, markTicketsAsAttended } from "@/services/bookingService";
 import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
 import { isEventOver } from "@/lib/utils";
 import MovingPartyBackground from "@/components/ui/MovingPartyBackground";
-import { supabase } from "@/integrations/supabase/client";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
+import EventTicket from "@/components/tickets/EventTicket";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -69,6 +65,7 @@ const Profile = () => {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [membership, setMembership] = useState<any>(null);
+  const [membershipPlans, setMembershipPlans] = useState<any[]>([]);
   const [renewLoading, setRenewLoading] = useState(false);
   
   // Get categories for preferences
@@ -352,6 +349,26 @@ const Profile = () => {
       });
     }
   };
+
+  const fetchMembershipData = async () => {
+    if (!user?.id) return;
+    
+    const [membershipData, plansData] = await Promise.all([
+      getUserMembership(user.id),
+      getMembershipPlans()
+    ]);
+    
+    setMembership(membershipData);
+    setMembershipPlans(plansData);
+  };
+
+  const handleRenewSuccess = () => {
+    fetchMembershipData();
+    toast({
+      title: "Membership Renewed!",
+      description: "Your premium membership has been successfully renewed.",
+    });
+  };
   
   // Format date for display
   const daysRemaining = membership?.end_date ? Math.ceil((new Date(membership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -362,6 +379,35 @@ const Profile = () => {
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        setUserProfile({
+          full_name: data.full_name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          city: data.city || '',
+          preferences: []
+        });
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+    fetchMembershipData();
+  }, [user?.id]);
   if (!isLoaded || !isSignedIn) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -502,14 +548,19 @@ const Profile = () => {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button 
-                              onClick={handleRenew}
-                              disabled={renewLoading}
-                              className="flex-1"
-                              variant="outline"
-                            >
-                              {renewLoading ? 'Renewing...' : 'Renew Plan'}
-                            </Button>
+                            {membership?.plan && (
+                              <RazorpayMembershipButton
+                                planId={membership.plan.id}
+                                userId={user.id}
+                                planName={membership.plan.name}
+                                amount={membership.plan.price_inr}
+                                onSuccess={handleRenewSuccess}
+                                className="flex-1"
+                                variant="outline"
+                              >
+                                {renewLoading ? 'Renewing...' : 'Renew Plan'}
+                              </RazorpayMembershipButton>
+                            )}
                             <Button 
                               onClick={() => navigate('/pricing')}
                               className="flex-1"

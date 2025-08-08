@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Star, Gift, Users, Calendar, Lock, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import RazorpayMembershipButton from "@/components/ui/RazorpayMembershipButton";
+import { getMembershipPlans, getUserMembership } from "@/services/membershipService";
 
 const premiumFeatures = [
   {
@@ -62,17 +64,24 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan | null>(null);
   const [myMembership, setMyMembership] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMembershipData = async () => {
+    if (user?.id) {
+      const membership = await getUserMembership(user.id);
+      setMyMembership(membership);
+    }
+  };
 
   useEffect(() => {
     document.title = "Motojojo Premium | Pricing Plans";
     const fetchPlans = async () => {
-      const { data, error } = await supabase
-        .from("membership_plans")
-        .select("*")
-        .eq("is_active", true)
-        .order("duration_days", { ascending: true });
-      if (error) {
-        console.error("Error fetching plans:", error);
+      const plansData = await getMembershipPlans();
+      if (plansData.length > 0) {
+        setPlans(plansData);
+        setSelected(plansData[0]);
+      } else {
+        // Fallback plans
         const fallback: Plan[] = [
           { id: "fallback-30", name: "Monthly", duration_days: 30, price_inr: 500, description: null },
           { id: "fallback-90", name: "Quarterly", duration_days: 90, price_inr: 899, description: null },
@@ -80,50 +89,19 @@ export default function PricingPage() {
         ];
         setPlans(fallback);
         setSelected(fallback[0]);
-      } else {
-        const list = data || [];
-        setPlans(list);
-        setSelected(list[0] || null);
       }
     };
 
-    const fetchMembership = async () => {
-      if (!user?.id) { setMyMembership(null); return; }
-      const { data, error } = await supabase
-        .from("user_memberships")
-        .select("*, plan:membership_plans(*)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!error) setMyMembership(data);
-    };
-
     fetchPlans();
-    fetchMembership();
+    fetchMembershipData();
   }, [user?.id]);
 
-  const handleSubscribe = async (plan: Plan) => {
-    if (!isSignedIn || !user?.id) {
-      navigate("/auth");
-      return;
-    }
-    const now = new Date();
-    const end = myMembership?.end_date ? new Date(myMembership.end_date) : null;
-    const start_date = end && end > now ? end.toISOString() : now.toISOString();
-
-    const { data, error } = await supabase
-      .from("user_memberships")
-      .insert({ user_id: user.id, plan_id: plan.id, status: "active", start_date })
-      .select("*, plan:membership_plans(*)")
-      .single();
-
-    if (error) {
-      toast({ title: "Subscription failed", description: error.message });
-      return;
-    }
-    toast({ title: "Premium activated!", description: `${plan.name} plan is now active.` });
-    setMyMembership(data);
+  const handlePaymentSuccess = () => {
+    fetchMembershipData();
+    toast({
+      title: "Premium Activated!",
+      description: "Welcome to Motojojo Premium! Enjoy exclusive features.",
+    });
   };
 
   const daysRemaining = myMembership?.end_date ? Math.ceil((new Date(myMembership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -161,11 +139,26 @@ export default function PricingPage() {
                 <CardContent>
                   <div className="text-lg font-semibold text-black">₹{plan.price_inr}</div>
                   <div className="text-base text-violet mt-2">{plan.description || "All-access to premium features and experiences."}</div>
-                  <Button className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
-                    onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
-                  >
-                    {ctaLabel}
-                  </Button>
+                  
+                  {isSignedIn && user?.id ? (
+                    <RazorpayMembershipButton
+                      planId={plan.id}
+                      userId={user.id}
+                      planName={plan.name}
+                      amount={plan.price_inr}
+                      onSuccess={handlePaymentSuccess}
+                      className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
+                    >
+                      {ctaLabel}
+                    </RazorpayMembershipButton>
+                  ) : (
+                    <Button 
+                      className="w-full mt-4 bg-gradient-to-r from-yellow to-orange-400 text-black font-bold text-lg py-2"
+                      onClick={() => navigate("/auth")}
+                    >
+                      Sign In to Subscribe
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
