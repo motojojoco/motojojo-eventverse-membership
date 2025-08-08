@@ -130,7 +130,10 @@ export const getHostInvitations = async (): Promise<HostInvitation[]> => {
     console.error('Error fetching host invitations:', error);
     return [];
   }
-  return data || [];
+  return (data || []).map(invitation => ({
+    ...invitation,
+    status: invitation.status as "pending" | "accepted" | "expired"
+  }));
 };
 
 export const deleteHostInvitation = async (invitationId: string): Promise<boolean> => {
@@ -178,7 +181,12 @@ export const getHostEvents = async (): Promise<Event[]> => {
     return [];
   }
 
-  return data || [];
+  return (data || []).map((event: any) => ({
+    ...event,
+    gallery: event.gallery || [],
+    featured: event.featured || false,
+    created_by: event.created_by || event.host
+  }));
 };
 
 export const assignHostToEvent = async (hostId: string, eventId: string, permissions?: any): Promise<boolean> => {
@@ -297,7 +305,10 @@ export const getAttendanceRecords = async (eventId?: string): Promise<Attendance
     console.error('Error fetching attendance records:', error);
     return [];
   }
-  return data || [];
+  return (data || []).map(record => ({
+    ...record,
+    status: record.status as "present" | "absent"
+  }));
 };
 
 // Host Dashboard Data

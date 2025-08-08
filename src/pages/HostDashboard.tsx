@@ -677,7 +677,19 @@ const HostDashboard = () => {
                   <EventForm
                     onSubmit={async (data) => {
                       if (!hostProfile) return;
-                      await createEvent({ ...data, host: hostProfile.id, image: (data as any).image || (data as any).images?.[0] || 'https://via.placeholder.com/800x600' });
+                      await createEvent({ 
+                        ...data, 
+                        host: hostProfile.id, 
+                        title: data.title || 'New Event',
+                        description: data.description || 'A great experience awaits!',
+                        date: data.date || new Date().toISOString().split('T')[0],
+                        time: data.time || '18:00',
+                        venue: data.venue || 'TBD',
+                        city: data.city || 'Mumbai',
+                        category: data.category || 'experience',
+                        price: data.base_price || data.ticket_price || 0,
+                        image: (data as any).image || (data as any).images?.[0] || 'https://via.placeholder.com/800x600' 
+                      });
                       setIsCreateEventOpen(false);
                       queryClient.invalidateQueries({ queryKey: ['host-events'] });
                     }}

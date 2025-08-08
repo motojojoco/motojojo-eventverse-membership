@@ -581,11 +581,10 @@ const processCompletedEventsDirect = async (): Promise<{
           
           // Get the count of tickets that were updated
           const { data: updatedTickets } = await supabase
-            .from('tickets')
+            .from('attendance_records')
             .select('id')
-            .in('booking_id', bookingIds)
-            .eq('attended', true)
-            .gte('attended_at', new Date(Date.now() - 60000).toISOString()); // Tickets marked in the last minute
+            .eq('event_id', event.id)
+            .eq('status', 'present');
           
           const ticketsUpdated = updatedTickets?.length || 0;
           totalTicketsUpdated += ticketsUpdated;
