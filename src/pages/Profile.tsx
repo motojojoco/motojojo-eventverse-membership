@@ -31,13 +31,14 @@ import {
 } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/use-categories";
 import { useToast } from "@/hooks/use-toast";
-import { Check, UserRound, MapPin, Phone, Mail, Ticket, Clock, CheckCircle, MessageSquare } from "lucide-react";
+import { Check, UserRound, MapPin, Phone, Mail, Ticket, Clock, CheckCircle, MessageSquare, Star } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserBookings, getBookingTickets, Booking, Ticket as TicketType, subscribeToBookingUpdates, generateTicketsForBooking, resendTicketEmail, markTicketsAsAttended } from "@/services/bookingService";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isEventOver } from "@/lib/utils";
 import MovingPartyBackground from "@/components/ui/MovingPartyBackground";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -67,6 +68,8 @@ const Profile = () => {
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>("");
+  const [membership, setMembership] = useState<any>(null);
+  const [renewLoading, setRenewLoading] = useState(false);
   
   // Get categories for preferences
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -135,18 +138,7 @@ const Profile = () => {
       });
     }
   }, [user, profile]);
-  
-  // Redirect if not signed in
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to view your profile.",
-      });
-      navigate("/");
-    }
-  }, [isLoaded, isSignedIn, navigate, toast]);
-  
+  // Profile update handlers
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdatingProfile(true);
@@ -194,7 +186,7 @@ const Profile = () => {
       }
     });
   };
-
+  
   const handleSavePreferences = async () => {
     setIsSavingPreferences(true);
     try {
@@ -217,6 +209,44 @@ const Profile = () => {
       });
     } finally {
       setIsSavingPreferences(false);
+    }
+  };
+  // Fetch membership for user
+  useEffect(() => {
+    const fetchMembership = async () => {
+      if (!user?.id) { setMembership(null); return; }
+      const { data } = await supabase
+        .from('user_memberships')
+        .select('*, plan:membership_plans(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setMembership(data);
+    };
+    fetchMembership();
+  }, [user?.id]);
+  
+  const handleRenew = async () => {
+    if (!membership?.plan?.id || !user?.id) { navigate('/pricing'); return; }
+    try {
+      setRenewLoading(true);
+      const now = new Date();
+      const end = membership?.end_date ? new Date(membership.end_date) : null;
+      const start_date = end && end > now ? end.toISOString() : now.toISOString();
+      const { data, error } = await supabase
+        .from('user_memberships')
+        .insert({ user_id: user.id, plan_id: membership.plan.id, status: 'active', start_date })
+        .select('*, plan:membership_plans(*)')
+        .single();
+      if (error) {
+        toast({ title: 'Renewal failed', description: error.message, variant: 'destructive' });
+        return;
+      }
+      setMembership(data);
+      toast({ title: 'Membership renewed', description: `${data.plan?.name} plan will continue seamlessly.` });
+    } finally {
+      setRenewLoading(false);
     }
   };
 
@@ -324,12 +354,7 @@ const Profile = () => {
   };
   
   // Format date for display
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-  
+  const daysRemaining = membership?.end_date ? Math.ceil((new Date(membership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
   if (!isLoaded || !isSignedIn) {
     return (
       <div className="min-h-screen flex flex-col">
