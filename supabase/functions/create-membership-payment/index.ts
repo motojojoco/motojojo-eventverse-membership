@@ -49,7 +49,7 @@ serve(async (req) => {
     const orderData = {
       amount: plan.price_inr * 100, // Convert to paise
       currency: 'INR',
-      receipt: `membership_${planId}_${userId}_${Date.now()}`,
+      receipt: `mem_${Date.now().toString().slice(-8)}`, // Keep under 40 chars
       notes: {
         plan_id: planId,
         user_id: userId,
