@@ -19,9 +19,9 @@ const SignInSignUp = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Get redirect param from URL
+  // Get redirect param from URL or state
   const params = new URLSearchParams(location.search);
-  const redirect = params.get("redirect");
+  const redirect = params.get("redirect") || location.state?.returnTo;
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,9 +49,10 @@ const SignInSignUp = () => {
     setFormError(null);
     // Build the redirectTo URL for Supabase OAuth
     let redirectTo = window.location.origin;
-    if (redirect) {
+    const targetRedirect = redirect || '/';
+    if (targetRedirect !== '/') {
       // Ensure redirect starts with a slash
-      redirectTo += redirect.startsWith('/') ? redirect : `/${redirect}`;
+      redirectTo += targetRedirect.startsWith('/') ? targetRedirect : `/${targetRedirect}`;
     }
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider: 'google',

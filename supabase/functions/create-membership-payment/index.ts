@@ -42,14 +42,14 @@ serve(async (req) => {
       throw new Error('User not found')
     }
 
-    // Create Razorpay order with provided credentials
-    const razorpayKeyId = 'rzp_test_AIaN0EfXmfZgMk' // Provided key id
-    const razorpaySecret = 'r8Dz7VtDvo7ujdOSeZ7AlKND' // Provided key secret
+    // Create Razorpay order
+    const razorpayKeyId = 'rzp_test_Zg4ZrqiSn0qiSB' // Your test key
+    const razorpaySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
 
     const orderData = {
       amount: plan.price_inr * 100, // Convert to paise
       currency: 'INR',
-      receipt: `membership_${planId}_${userId}_${Date.now()}`,
+      receipt: `mem_${Date.now().toString().slice(-8)}`, // Keep under 40 chars
       notes: {
         plan_id: planId,
         user_id: userId,
