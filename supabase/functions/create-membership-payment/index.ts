@@ -43,7 +43,7 @@ serve(async (req) => {
     }
 
     // Create Razorpay order
-    const razorpayKeyId = 'rzp_test_Zg4ZrqiSn0qiSB' // Your test key
+    const razorpayKeyId = 'rzp_test_AIaN0EfXmfZgMk'
     const razorpaySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
 
     const orderData = {
@@ -96,7 +96,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error.message 
       }),
       {
         status: 400,
