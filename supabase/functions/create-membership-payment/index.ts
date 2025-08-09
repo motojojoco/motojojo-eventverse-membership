@@ -42,9 +42,9 @@ serve(async (req) => {
       throw new Error('User not found')
     }
 
-    // Create Razorpay order
-    const razorpayKeyId = 'rzp_test_Zg4ZrqiSn0qiSB' // Your test key
-    const razorpaySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
+    // Create Razorpay order with provided credentials
+    const razorpayKeyId = 'rzp_test_AIaN0EfXmfZgMk' // Provided key id
+    const razorpaySecret = 'r8Dz7VtDvo7ujdOSeZ7AlKND' // Provided key secret
 
     const orderData = {
       amount: plan.price_inr * 100, // Convert to paise
@@ -96,7 +96,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         status: 400,
