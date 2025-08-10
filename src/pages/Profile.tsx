@@ -14,6 +14,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { Star, User, Calendar, MapPin, Phone, Mail, Edit2, Check, UserRound, Ticket, Clock, CheckCircle, MessageSquare } from "lucide-react";
 import RazorpayMembershipButton from "@/components/ui/RazorpayMembershipButton";
 import { getUserMembership, getMembershipPlans } from "@/services/membershipService";
+import CurrentPlanCard from "@/components/membership/CurrentPlanCard";
 import {
   Tabs,
   TabsContent,
@@ -519,58 +520,24 @@ const Profile = () => {
                 
                 {/* My Membership Section */}
                 <FadeIn delay={150}>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Star className="h-5 w-5" />
-                        My Membership
-                      </CardTitle>
-                      <CardDescription>
-                        Your premium membership status and benefits
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {membership ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-semibold text-lg">{membership.plan?.name} Plan</div>
-                              <div className="text-sm text-muted-foreground">₹{membership.amount_inr} • {membership.status}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-muted-foreground">Valid until</div>
-                              <div className="font-medium">{formatDate(membership.end_date)}</div>
-                              {daysRemaining !== null && (
-                                <div className="text-sm text-muted-foreground">
-                                  {daysRemaining > 0 ? `${daysRemaining} days left` : 'Expired'}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {membership?.plan && (
-                              <RazorpayMembershipButton
-                                planId={membership.plan.id}
-                                userId={user.id}
-                                planName={membership.plan.name}
-                                amount={membership.plan.price_inr}
-                                onSuccess={handleRenewSuccess}
-                                className="flex-1"
-                                variant="outline"
-                              >
-                                {renewLoading ? 'Renewing...' : 'Renew Plan'}
-                              </RazorpayMembershipButton>
-                            )}
-                            <Button 
-                              onClick={() => navigate('/pricing')}
-                              className="flex-1"
-                              variant="outline"
-                            >
-                              Change Plan
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
+                  {membership ? (
+                    <CurrentPlanCard 
+                      membership={membership} 
+                      user={user} 
+                      onRenewSuccess={handleRenewSuccess} 
+                    />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Star className="h-5 w-5" />
+                          My Membership
+                        </CardTitle>
+                        <CardDescription>
+                          Your premium membership status and benefits
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
                         <div className="text-center space-y-4">
                           <div className="text-muted-foreground">No active membership</div>
                           <Button 
@@ -580,9 +547,9 @@ const Profile = () => {
                             Get Premium
                           </Button>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
                 </FadeIn>
                 
                 {/* Invite Friends Section */}

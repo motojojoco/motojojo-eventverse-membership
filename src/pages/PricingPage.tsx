@@ -109,8 +109,26 @@ export default function PricingPage() {
     fetchMembershipData();
   }, [user?.id]);
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     fetchMembershipData();
+    
+    // Send welcome email
+    if (user?.email && user?.user_metadata?.full_name) {
+      try {
+        await supabase.functions.invoke('send-membership-email', {
+          body: {
+            type: 'purchase',
+            userEmail: user.email,
+            userName: user.user_metadata.full_name || 'User',
+            planName: selected?.name || 'Premium',
+            endDate: new Date(Date.now() + (selected?.duration_days || 30) * 24 * 60 * 60 * 1000).toLocaleDateString()
+          }
+        });
+      } catch (error) {
+        console.error('Error sending welcome email:', error);
+      }
+    }
+    
     toast({
       title: "Premium Activated!",
       description: "Welcome to Motojojo Premium! Enjoy exclusive features.",
@@ -284,7 +302,7 @@ export default function PricingPage() {
 
         {/* Current Membership Status */}
         {myMembership && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto mb-16">
             <Card className="bg-gradient-to-r from-sandstorm/10 to-violet/10 border border-sandstorm/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-center text-white flex items-center justify-center gap-2">
@@ -292,7 +310,7 @@ export default function PricingPage() {
                   My Premium Membership
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
+              <CardContent className="text-center space-y-4">
                 <div className="space-y-2">
                   <div className="text-xl font-bold text-sandstorm">{myMembership.plan?.name} Plan</div>
                   <div className="text-white/80">₹{myMembership.amount_inr} • {myMembership.status}</div>
@@ -305,11 +323,47 @@ export default function PricingPage() {
                     </div>
                   )}
                 </div>
+                
+                {/* Renew Button */}
+                {user?.id && myMembership.plan && (
+                  <RazorpayMembershipButton
+                    planId={myMembership.plan.id}
+                    userId={user.id}
+                    planName={myMembership.plan.name}
+                    amount={myMembership.plan.price_inr}
+                    onSuccess={handlePaymentSuccess}
+                    className="bg-gradient-to-r from-sandstorm to-violet text-black hover:shadow-glow-yellow font-bold px-8 py-3"
+                  >
+                    Renew Plan
+                  </RazorpayMembershipButton>
+                )}
               </CardContent>
             </Card>
           </div>
         )}
       </div>
+      
+      {/* Bottom Navigation - Mobile Only */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-sm border-t border-border shadow-lg" style={{ backgroundColor: '#F7E1B5' }}>
+        <div className="flex items-center justify-around py-2">
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-black" onClick={() => navigate("/")}>
+            <span className="text-xs">Home</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-black" onClick={() => navigate("/events")}>
+            <span className="text-xs">Events</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-violet bg-yellow-300/30 shadow-md" onClick={() => navigate("/pricing")}>
+            <Crown className="h-5 w-5" />
+            <span className="text-xs font-medium">Premium</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-black" onClick={() => navigate("/profile?tab=bookings")}>
+            <span className="text-xs">Bookings</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-black" onClick={() => navigate("/profile")}>
+            <span className="text-xs">Profile</span>
+          </Button>
+        </div>
+      </nav>
     </div>
   );
 }

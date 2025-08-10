@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { createMembershipPayment, verifyMembershipPayment } from '@/services/membershipService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RazorpayMembershipButtonProps {
   planId: string;
@@ -98,6 +99,25 @@ const RazorpayMembershipButton: React.FC<RazorpayMembershipButtonProps> = ({
                 title: "Payment Successful!",
                 description: verificationResult.message,
               });
+              
+              // Send welcome email after successful payment
+              try {
+                const { data: userData } = await supabase.auth.getUser();
+                if (userData.user?.email) {
+                  await supabase.functions.invoke('send-membership-email', {
+                    body: {
+                      type: 'purchase',
+                      userEmail: userData.user.email,
+                      userName: userData.user.user_metadata?.full_name || 'User',
+                      planName: planName,
+                      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
+                    }
+                  });
+                }
+              } catch (emailError) {
+                console.error('Error sending welcome email:', emailError);
+              }
+              
               onSuccess?.();
             } else {
               throw new Error(verificationResult.error || 'Payment verification failed');
