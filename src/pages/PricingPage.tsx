@@ -5,10 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Gift, Users, Calendar, Lock, Clock, TrendingUp, Crown, Zap, Shield, Sparkles } from "lucide-react";
+import { CheckCircle, Star, Gift, Users, Calendar, Lock, Clock, TrendingUp, Crown, Zap, Shield, Sparkles, Home, Ticket, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RazorpayMembershipButton from "@/components/ui/RazorpayMembershipButton";
-import { getMembershipPlans, getUserMembership } from "@/services/membershipService";
+import { getMembershipPlans } from "@/services/membershipService";
+import { useMembership } from "@/hooks/use-membership";
 
 const premiumFeatures = [
   {
@@ -73,44 +74,36 @@ export default function PricingPage() {
   const { isSignedIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { membership: myMembership, daysRemaining, refreshMembership } = useMembership();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan | null>(null);
-  const [myMembership, setMyMembership] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
 
-  const fetchMembershipData = async () => {
-    if (user?.id) {
-      const membership = await getUserMembership(user.id);
-      setMyMembership(membership);
+  const fetchPlans = async () => {
+    const plansData = await getMembershipPlans();
+    if (plansData.length > 0) {
+      setPlans(plansData);
+      setSelected(plansData[0]);
+    } else {
+      // Fallback plans
+      const fallback: Plan[] = [
+        { id: "fallback-30", name: "Monthly", duration_days: 30, price_inr: 500, description: null },
+        { id: "fallback-90", name: "Quarterly", duration_days: 90, price_inr: 899, description: null },
+        { id: "fallback-365", name: "Annual", duration_days: 365, price_inr: 1899, description: null },
+      ];
+      setPlans(fallback);
+      setSelected(fallback[0]);
     }
   };
 
   useEffect(() => {
     document.title = "Motojojo Premium | Pricing Plans";
-    const fetchPlans = async () => {
-      const plansData = await getMembershipPlans();
-      if (plansData.length > 0) {
-        setPlans(plansData);
-        setSelected(plansData[0]);
-      } else {
-        // Fallback plans
-        const fallback: Plan[] = [
-          { id: "fallback-30", name: "Monthly", duration_days: 30, price_inr: 500, description: null },
-          { id: "fallback-90", name: "Quarterly", duration_days: 90, price_inr: 899, description: null },
-          { id: "fallback-365", name: "Annual", duration_days: 365, price_inr: 1899, description: null },
-        ];
-        setPlans(fallback);
-        setSelected(fallback[0]);
-      }
-    };
-
     fetchPlans();
-    fetchMembershipData();
-  }, [user?.id]);
+  }, []);
 
   const handlePaymentSuccess = async () => {
-    fetchMembershipData();
+    // Refresh membership data in real-time
+    refreshMembership();
     
     // Send welcome email
     if (user?.email && user?.user_metadata?.full_name) {
@@ -134,8 +127,6 @@ export default function PricingPage() {
       description: "Welcome to Motojojo Premium! Enjoy exclusive features.",
     });
   };
-
-  const daysRemaining = myMembership?.end_date ? Math.ceil((new Date(myMembership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-violet/20 relative overflow-hidden">

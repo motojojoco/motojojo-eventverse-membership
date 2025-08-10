@@ -45,17 +45,39 @@ export const getUserMembership = async (userId: string): Promise<UserMembership 
     `)
     .eq('user_id', userId)
     .eq('status', 'active')
-    .single();
+    .order('created_at', { ascending: false })
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching user membership:', error);
     return null;
   }
 
-  return {
+  return data ? {
     ...data,
     status: data.status as "pending" | "active" | "expired"
-  };
+  } : null;
+};
+
+// Real-time subscription for membership changes
+export const subscribeToMembershipChanges = (userId: string, callback: (membership: UserMembership | null) => void) => {
+  return supabase
+    .channel(`membership_${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_memberships',
+        filter: `user_id=eq.${userId}`
+      },
+      async () => {
+        // Fetch updated membership when changes occur
+        const membership = await getUserMembership(userId);
+        callback(membership);
+      }
+    )
+    .subscribe();
 };
 
 export const createMembershipPayment = async (planId: string, userId: string) => {
@@ -86,4 +108,36 @@ export const verifyMembershipPayment = async (
   }
 
   return data;
+};
+
+// Save user details during membership purchase
+export const saveUserMembershipDetails = async (
+  userId: string,
+  planId: string,
+  paymentId: string,
+  userDetails: {
+    full_name?: string;
+    phone?: string;
+    city?: string;
+    email?: string;
+  }
+) => {
+  // Update user profile with any new details
+  if (userDetails.full_name || userDetails.phone || userDetails.city) {
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        full_name: userDetails.full_name,
+        phone: userDetails.phone,
+        city: userDetails.city,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (userError) {
+      console.error('Error updating user details:', userError);
+    }
+  }
+
+  return true;
 };

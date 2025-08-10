@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { FadeIn } from "@/components/ui/motion";
 import { Star, User, Calendar, MapPin, Phone, Mail, Edit2, Check, UserRound, Ticket, Clock, CheckCircle, MessageSquare } from "lucide-react";
 import RazorpayMembershipButton from "@/components/ui/RazorpayMembershipButton";
-import { getUserMembership, getMembershipPlans } from "@/services/membershipService";
+import { getMembershipPlans } from "@/services/membershipService";
 import CurrentPlanCard from "@/components/membership/CurrentPlanCard";
+import { useMembership } from "@/hooks/use-membership";
 import {
   Tabs,
   TabsContent,
@@ -65,9 +66,10 @@ const Profile = () => {
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>("");
-  const [membership, setMembership] = useState<any>(null);
   const [membershipPlans, setMembershipPlans] = useState<any[]>([]);
-  const [renewLoading, setRenewLoading] = useState(false);
+  
+  // Use the membership hook for real-time updates
+  const { membership, daysRemaining, refreshMembership } = useMembership();
   
   // Get categories for preferences
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -209,42 +211,46 @@ const Profile = () => {
       setIsSavingPreferences(false);
     }
   };
-  // Fetch membership for user
-  useEffect(() => {
-    const fetchMembership = async () => {
-      if (!user?.id) { setMembership(null); return; }
-      const { data } = await supabase
-        .from('user_memberships')
-        .select('*, plan:membership_plans(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setMembership(data);
-    };
-    fetchMembership();
-  }, [user?.id]);
+  // Remove the old membership fetch effect since we're using the hook now
   
   const handleRenew = async () => {
-    if (!membership?.plan?.id || !user?.id) { navigate('/pricing'); return; }
+    if (!membership?.plan?.id || !user?.id) { 
+      navigate('/pricing'); 
+      return; 
+    }
+    
     try {
-      setRenewLoading(true);
       const now = new Date();
       const end = membership?.end_date ? new Date(membership.end_date) : null;
       const start_date = end && end > now ? end.toISOString() : now.toISOString();
+      
       const { data, error } = await supabase
         .from('user_memberships')
-        .insert({ user_id: user.id, plan_id: membership.plan.id, status: 'active', start_date })
+        .insert({ 
+          user_id: user.id, 
+          plan_id: membership.plan.id, 
+          status: 'active', 
+          start_date 
+        })
         .select('*, plan:membership_plans(*)')
         .single();
+        
       if (error) {
-        toast({ title: 'Renewal failed', description: error.message, variant: 'destructive' });
+        toast({ 
+          title: 'Renewal failed', 
+          description: error.message, 
+          variant: 'destructive' 
+        });
         return;
       }
-      setMembership(data);
-      toast({ title: 'Membership renewed', description: `${data.plan?.name} plan will continue seamlessly.` });
-    } finally {
-      setRenewLoading(false);
+      
+      refreshMembership(); // Refresh using the hook
+      toast({ 
+        title: 'Membership renewed', 
+        description: `${data.plan?.name} plan will continue seamlessly.` 
+      });
+    } catch (error) {
+      console.error('Renewal error:', error);
     }
   };
 
@@ -353,26 +359,19 @@ const Profile = () => {
 
   const fetchMembershipData = async () => {
     if (!user?.id) return;
-    
-    const [membershipData, plansData] = await Promise.all([
-      getUserMembership(user.id),
-      getMembershipPlans()
-    ]);
-    
-    setMembership(membershipData);
+    const plansData = await getMembershipPlans();
     setMembershipPlans(plansData);
   };
 
   const handleRenewSuccess = () => {
-    fetchMembershipData();
+    refreshMembership(); // Use the hook's refresh function
     toast({
       title: "Membership Renewed!",
       description: "Your premium membership has been successfully renewed.",
     });
   };
   
-  // Format date for display
-  const daysRemaining = membership?.end_date ? Math.ceil((new Date(membership.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  // Remove daysRemaining calculation since it's now in the hook
   
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -409,6 +408,7 @@ const Profile = () => {
     fetchUserData();
     fetchMembershipData();
   }, [user?.id]);
+  
   if (!isLoaded || !isSignedIn) {
     return (
       <div className="min-h-screen flex flex-col">
